@@ -1,2 +1,2 @@
 # czi-conda-forge-db
-A work in progres repo for migrating some interanal data structures of conda-forge into a DB formation
+A work in progress report for migrating some internal data structures of conda-forge into a DB formation
