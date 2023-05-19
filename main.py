@@ -5,14 +5,17 @@ from populate import (
     artifacts,
     feedstock_outputs,
 )
+from log import logger
+from pathlib import Path
 
 
 def update(session):
-    print("Updating feedstocks...")
-    feedstock_outputs.update(session)
+    feedstock_outputs.update(
+        session,
+        path=Path("/home/vcerutti/Conda-Forge/") / "feedstock-outputs" / "outputs",
+    )
     session.commit()
 
-    print("Updating packages...")
     artifacts.update(session)
     session.commit()
 

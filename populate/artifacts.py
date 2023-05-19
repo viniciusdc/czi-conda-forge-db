@@ -1,2 +1,5 @@
+from log import logger
+
+
 def update(session):
-    print("Updating feedstocks...")
+    logger.info("Updating artifacts...")

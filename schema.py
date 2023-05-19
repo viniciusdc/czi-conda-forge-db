@@ -45,6 +45,7 @@ class FeedstockOutputs(Base):
     path = Column(String)
     feedstock_id = Column(Integer, ForeignKey("feedstocks.id"))
     package_id = Column(Integer, ForeignKey("packages.id"))
+    hash = Column(String)
 
 
 class Artifacts(Base):
