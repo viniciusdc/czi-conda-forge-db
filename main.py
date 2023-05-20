@@ -12,7 +12,7 @@ from pathlib import Path
 def update(session):
     feedstock_outputs.update(
         session,
-        path=Path("/home/vcerutti/Conda-Forge/") / "feedstock-outputs" / "outputs",
+        path=Path("/home/vinicius/Conda-Forge") / "feedstock-outputs" / "outputs",
     )
     session.commit()
 
