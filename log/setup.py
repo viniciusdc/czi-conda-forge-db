@@ -9,7 +9,7 @@ def logging_setup():
     logger = logging.getLogger("")
     logger.addHandler(RichHandler())
     logger.addHandler(logging.FileHandler(log_file))
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     return logger
 
 
