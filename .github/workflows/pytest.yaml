@@ -5,22 +5,18 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+        run:
+          shell: bash -el {0}
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Setup Mambaforge
-      uses: conda-incubator/setup-miniconda@v2
+    - name: Build environment
+      uses: ./.github/actions/build-conda-env
       with:
-        miniforge-variant: Mambaforge
-        miniforge-version: latest
-        use-mamba: true
-        environment-file: environment.yaml
-        activate-environment: cf-database
-
-    - name: Activate Conda environment
-      run: conda activate cf-database
+        env_file: environment.yaml
 
     - name: Run PyTest
       run: pytest cfdb/tests

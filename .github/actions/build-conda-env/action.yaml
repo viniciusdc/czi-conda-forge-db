@@ -1,0 +1,44 @@
+name: Build conda environment & test
+description: Builds conda environment for the docker images
+
+inputs:
+  env_file:
+    description: Source path to environment file
+    required: true
+    type: string
+  # Increase this value to reset cache manually
+  cache-number:
+    description: Number add to the cache key name
+    required: false
+    default: 0
+    type: string
+
+runs:
+  using: composite
+
+  steps:
+    - name: Get environment name from file
+      id: environment
+      run: |
+        echo "Getting environment name from file"
+        echo ::set-output name=environment-name::$(grep name ${{ inputs.env_file }} | awk '{ print $2}' )
+      shell: bash
+
+    - name: Set cache date
+      run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+      shell: bash
+
+    # Cache action can't be modularized as a custom action, so we need to run it explicitly
+    - uses: actions/cache@v3
+      with:
+        path: ~/conda_pkgs_dir
+        key: ${{ runner.os }}-conda-${{ steps.environment.outputs.environment-name }}-${{ env.DATE }}-${{ inputs.cache-number }}
+
+    - name: Setup Mambaforge
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniforge-variant: Mambaforge
+        miniforge-version: latest
+        use-mamba: true
+        activate-environment: ${{ steps.environment.outputs.environment-name }}
+        environment-file: ${{ inputs.env_file }}
