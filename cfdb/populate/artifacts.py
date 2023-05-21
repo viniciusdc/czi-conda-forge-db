@@ -1,4 +1,4 @@
-from log import logger
+from cfdb.log import logger
 
 
 def update(session):

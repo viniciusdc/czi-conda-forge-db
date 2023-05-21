@@ -80,7 +80,7 @@ def _compare_files(
     Returns:
         Set[Path]: A set of file paths (relative to root_dir) that were not present in the database or have changed hashes.
     """
-    db_files = {(Path(row[0]).as_posix(), row[1]) for row in feedstock_outputs}
+    db_files = {(Path(row[0]), row[1]) for row in feedstock_outputs}
     stored_files_set = set()
 
     for stored_file in stored_files:
@@ -91,7 +91,8 @@ def _compare_files(
 
     changed_files = stored_files_set - db_files
 
-    logger.debug(f"# of changed files: {len(changed_files)}")
+    if len(changed_files) > 0:
+        logger.info(f"Detected {len(changed_files)} modified files.")
 
     return changed_files
 
@@ -126,7 +127,7 @@ def _update_feedstock_outputs(
 
     if not feedstock:
         logger.debug(
-            f"Feedstock [bold #DB7900]{feedstock_name}[/] not found in database. Proceeding to create it and its feedstock output."
+            f"Feedstock [bold blue]{feedstock_name}[/] not found in database. Proceeding to create it and its feedstock output."
         )
         feedstock = Feedstocks(
             name=feedstock_name,
@@ -144,7 +145,7 @@ def _update_feedstock_outputs(
 
     if feedstock_output:
         logger.debug(
-            f"Feedstock [bold #DB7900]{feedstock_name}[/] found in database. Proceeding to update its feedstock output."
+            f"Feedstock [bold blue]{feedstock_name}[/] found in database. Proceeding to update its feedstock output."
         )
         feedstock_output.hash = file_hash
         session.add(feedstock_output)
@@ -198,7 +199,7 @@ def update(session: Session, path: Path):
                 file=path / file  # Need to use the absolute path here
             )
             logger.debug(
-                f"Associated package name: [bold #DB7900]{associated_package_name}[/] :: Associated feedstocks: {associated_feedstocks}"
+                f"Associated package name: '{associated_package_name}' :: Associated feedstocks: '{associated_feedstocks}'"
             )
             package = (
                 session.query(Packages)
@@ -208,7 +209,7 @@ def update(session: Session, path: Path):
 
             if not package:
                 logger.debug(
-                    f"Package [bold #DB7900]{associated_package_name}[/] not found in database. Proceeding to create it and its feedstock outputs."
+                    f"Package '{associated_package_name}' not found in database. Proceeding to create it and its feedstock outputs."
                 )
                 package = Packages(
                     name=associated_package_name,

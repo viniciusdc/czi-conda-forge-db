@@ -1,18 +1,18 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.schema import Base
-from populate import (
+from cfdb.models.schema import Base
+from cfdb.populate import (
     artifacts,
     feedstock_outputs,
 )
-from log import logger
+from cfdb.log import logger
 from pathlib import Path
 
 
 def update(session):
     feedstock_outputs.update(
         session,
-        path=Path("/home/vinicius/Conda-Forge") / "feedstock-outputs" / "outputs",
+        path= Path('/Users/vinicius/Conda-forge/feedstock-outputs/outputs') # Path("/home/vinicius/Conda-Forge") / "feedstock-outputs" / "outputs",
     )
     session.commit()
 
