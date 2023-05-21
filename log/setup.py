@@ -1,6 +1,15 @@
 import logging
 from pathlib import Path
+
 from rich.logging import RichHandler
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 
 
 def logging_setup():
@@ -14,3 +23,16 @@ def logging_setup():
 
 
 logger = logging_setup()
+
+# set up progress bar columns for rich progress bar
+progressBar = Progress(
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(
+        bar_width=None,
+        pulse_style="bright_black",
+    ),
+    TaskProgressColumn(),
+    TimeRemainingColumn(),
+    MofNCompleteColumn(),
+    expand=True,
+)

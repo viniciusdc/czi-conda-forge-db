@@ -1,59 +1,24 @@
-from pathlib import Path
-from typing import List
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-from log import logger
-from tempfile import TemporaryDirectory
-import glob
 import concurrent.futures
-
-from schema import FeedstockOutputs, Packages, Feedstocks, uniq_id
-import hashlib
+import glob
 import json
-import tqdm
-from rich.progress import (
-    Progress,
-    BarColumn,
-    TextColumn,
-    TaskProgressColumn,
-    TimeRemainingColumn,
-    MofNCompleteColumn,
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import List, Set, Tuple
+
+from sqlalchemy.orm import Session
+from .utils import (
+    hash_file,
+    process_batch,
+    retrieve_associated_feedstock_from_output_blob,
 )
 
-from memory_profiler import profile
-
-
-def hash_file(filename: str) -> str:
-    """
-    Returns the SHA-1 hash of the file passed into it.
-
-    Args:
-        filename (str): The path to the file.
-
-    Returns:
-        str: The hexadecimal representation of the file's SHA-1 hash.
-    """
-    h = hashlib.sha1()
-
-    with open(filename, "rb") as file:
-        chunk = file.read(1024)
-        while chunk:
-            h.update(chunk)
-            chunk = file.read(1024)
-
-    return h.hexdigest()
-
-
-def process_batch(batch_files, tmp_file):
-    with open(tmp_file, "w") as f:
-        for file in batch_files:
-            file_hash = hash_file(file)
-            f.write(f"{file},{file_hash}\n")
+from log import logger, progressBar
+from schema import FeedstockOutputs, Feedstocks, Packages, uniq_id
 
 
 def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:
     """
-    Traverses  a directory of JSON files, generating a list of dictionaries
+    Traverses a directory of JSON files, generating a list of dictionaries
     with file paths and hashes. These dictionaries are written to an output directory.
 
     The hashes allow comparison between the directory and a database for necessary updates.
@@ -62,19 +27,15 @@ def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:
     Args:
         path (Path): The path to the directory containing the JSON files.
         output_dir (Path, optional): The output directory to store the list of dictionaries.
-        If not provided, the current directory will be used. Defaults to None.
+            If not provided, the current directory will be used. Defaults to None.
 
     Returns:
         List[Path]: A list of paths to the stored files.
     """
-    # check if given path is a directory
     if not path.is_dir():
         raise NotADirectoryError(f"{path} is not a directory.")
 
-    files = []
-    for file in glob.iglob(f"{path}/**/*.json", recursive=True):
-        files.append(file)
-
+    files = list(glob.iglob(f"{path}/**/*.json", recursive=True))
     logger.debug(f"# of JSON blob files: {len(files)}")
 
     num_of_files = len(files)
@@ -100,33 +61,35 @@ def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:
             stored_files.append(tmp_file)
 
     del files
-
     logger.debug(f"# of stored files: {len(stored_files)}")
 
     return stored_files
 
 
-def _compare_files(feedstock_outputs, stored_files, root_dir: Path):
+def _compare_files(
+    feedstock_outputs: List[Tuple[str, str, int]],
+    stored_files: List[Path],
+    root_dir: Path,
+) -> Set[Path]:
     """
     Compares the feedstock outputs from the database with the stored files, and returns a set of files that were not present in the database or have changed hashes.
 
     Args:
-        feedstock_outputs (List[Tuple]): List of tuples containing the path, hash, and id of feedstock outputs from the database.
+        feedstock_outputs (List[Tuple[str, str, int]]): List of tuples containing the path, hash, and id of feedstock outputs from the database.
         stored_files (List[Path]): List of paths to the stored files.
+        root_dir (Path): The root directory of the stored files.
 
     Returns:
-        Set[Path]: A set of file paths that were not present in the database or have changed hashes.
+        Set[Path]: A set of file paths (relative to root_dir) that were not present in the database or have changed hashes.
     """
-    db_files = set((Path(row[0]).as_posix(), row[1]) for row in feedstock_outputs)
+    db_files = {(Path(row[0]).as_posix(), row[1]) for row in feedstock_outputs}
     stored_files_set = set()
 
     for stored_file in stored_files:
         with open(stored_file, "r") as f:
             for line in f:
                 file_path, file_hash = line.strip().split(",")
-                stored_files_set.add(
-                    (Path(file_path).relative_to(root_dir).as_posix(), file_hash)
-                )
+                stored_files_set.add((Path(file_path).relative_to(root_dir), file_hash))
 
     changed_files = stored_files_set - db_files
 
@@ -135,154 +98,135 @@ def _compare_files(feedstock_outputs, stored_files, root_dir: Path):
     return changed_files
 
 
-progress = Progress(
-    TextColumn("[progress.description]{task.description}"),
-    BarColumn(
-        bar_width=None,
-        pulse_style="bright_black",
-    ),
-    TaskProgressColumn(),
-    TimeRemainingColumn(),
-    MofNCompleteColumn(),
-    expand=True,
-)
+def _update_feedstock_outputs(
+    session: Session,
+    file_rel_path: Path,
+    file_hash: str,
+    package_name: str,
+    feedstock_name: str,
+) -> Session:
+    """
+    Update or create the feedstock outputs in the database for a given feedstock.
+
+    Args:
+        session (Session): The SQLAlchemy session object.
+        file_rel_paht (Path): The path to the feedstock output file (relative to the root directory of the feedstock outputs).
+        file_hash (str): The SHA-1 hash of the file.
+        package_name (str): The name of the associated package.
+        feedstock_name (str): The name of the feedstock.
+
+    Returns:
+        Session: The updated SQLAlchemy session object.
+    """
+    feedstock = (
+        session.query(Feedstocks)
+        .filter(
+            Feedstocks.name == feedstock_name,
+        )
+        .first()
+    )
+
+    if not feedstock:
+        logger.debug(
+            f"Feedstock [bold #DB7900]{feedstock_name}[/] not found in database. Proceeding to create it and its feedstock output."
+        )
+        feedstock = Feedstocks(
+            name=feedstock_name,
+        )
+        session.add(feedstock)
+
+    feedstock_output = (
+        session.query(FeedstockOutputs)
+        .filter(
+            FeedstockOutputs.feedstock_name == feedstock.name,
+            FeedstockOutputs.package_name == package_name,
+        )
+        .first()
+    )
+
+    if feedstock_output:
+        logger.debug(
+            f"Feedstock [bold #DB7900]{feedstock_name}[/] found in database. Proceeding to update its feedstock output."
+        )
+        feedstock_output.hash = file_hash
+        session.add(feedstock_output)
+        return session
+
+    new_feedstock_output = FeedstockOutputs(
+        id=uniq_id(),
+        path=file_rel_path.as_posix(),
+        feedstock_name=feedstock.name,
+        package_name=package_name,
+        hash=file_hash,
+    )
+    session.add(new_feedstock_output)
+    return session
 
 
 def update(session: Session, path: Path):
+    """
+    Updates feedstock outputs in the database based on the comparison between the stored data and the current data.
+
+    Args:
+        session (Session): The database session.
+        path (Path): The path to the directory containing the JSON files.
+    """
     logger.info("Updating feedstocks...")
-    # Query the database for all feedstocks, to check the diff between the stored data and the current data
-    # to avoid unnecessary updates, we will check the hash of the file with the stored hash to see if it has changed and needs to be updated
-    # For the contents that will be updated, in order to avoid storing a lot of data in an object within the context python memory, we will store in a temp
-    # file (splitted by batches) and then we will read the file and store the data in the database accordingly
-
-    # create temp dir and batch files based on the number of feedstocks to be updated, the update will be sequential for now to avoid race conditions with the sqlite database, once we move to postgres we can parallelize the update
-
     logger.debug("Creating temporary directory...")
     _tmp_dir = TemporaryDirectory()
     tmp_dir = Path(_tmp_dir.name)
 
     logger.info("Querying database for feedstock outputs...")
-    # run query to get all feedstocks: select by path, hash and id
     feedstock_outputs = session.query(
         FeedstockOutputs.path, FeedstockOutputs.hash, FeedstockOutputs.id
     ).all()
 
     logger.info(f"Traversing files in {path}...")
-    # run the os walk transverse function to retrieve all the files in the feedstock outputs folder for comparison
     stored_files = transverse_files(path, tmp_dir)
 
     logger.info("Comparing files...")
-    # compare the files in the database with the files in the stored files
     changed_files = _compare_files(feedstock_outputs, stored_files, root_dir=path)
 
     if len(changed_files) == 0:
         logger.info("No changes detected. Exiting...")
         return
 
-    with progress:
-        for idx, file in enumerate(
-            progress.track(changed_files, description="Updating feedstocks...")
+    with progressBar:
+        for idx, (file, file_hash) in enumerate(
+            progressBar.track(changed_files, description="Updating feedstocks...")
         ):
             associated_package_name = file.stem
-
-            # Query the database to get the package by name
+            associated_feedstocks = retrieve_associated_feedstock_from_output_blob(
+                file=path / file  # Need to use the absolute path here
+            )
+            logger.debug(
+                f"Associated package name: [bold #DB7900]{associated_package_name}[/] :: Associated feedstocks: {associated_feedstocks}"
+            )
             package = (
                 session.query(Packages)
                 .filter(Packages.name == associated_package_name)
                 .first()
-            )  # ths should be unique, thus we can use first()
+            )
 
             if not package:
-                # if there is no package, then there will be no feedstock
                 logger.debug(
-                    f"Package [bold teal]{associated_package_name}[/] not found in database. Proceeding to create it and its feedstock outputs."
+                    f"Package [bold #DB7900]{associated_package_name}[/] not found in database. Proceeding to create it and its feedstock outputs."
                 )
-
-                # Create the package in the database
                 package = Packages(
                     name=associated_package_name,
                 )
                 session.add(package)
 
-            # update the feedstock outputs in the database
-            with open(file, "r") as f:
-                # structure of the file {"feedstocks": ["21cmfast"]}
-                payload = json.loads(f.read())
-                _, associated_feedstocks = payload.popitem()
-
-            logger.debug(
-                f"Associated package name: [bold teal]{associated_package_name}[/] :: Associated feedstocks: {associated_feedstocks}"
-            )
-
-            # Update the feedstock outputs in the database
             for feedstock_name in associated_feedstocks:
-                # Query the database to get the feedstock by name and package_id
-                feedstock = (
-                    session.query(Feedstocks)
-                    .filter(
-                        Feedstocks.name == feedstock_name,
-                        # Feedstocks.package_name == package.name,
-                    )
-                    .first()  # this should be unique, thus we can use first()
+                session = _update_feedstock_outputs(
+                    session=session,
+                    file_rel_path=file,
+                    file_hash=file_hash,
+                    package_name=package.name,
+                    feedstock_name=feedstock_name,
                 )
 
-                if feedstock:
-                    # Update the feedstock output in the database
-                    # There can be multiple feedstocks for a given package but only one package for a given feedstock
-                    # We will query the FeedstockOutputs table based on the Index(feedstock.name, package.name)
-                    feedstock_output = (
-                        session.query(FeedstockOutputs)
-                        .filter(
-                            FeedstockOutputs.feedstock_name == feedstock.name,
-                            FeedstockOutputs.package_name == package.name,
-                        )
-                        .first()
-                    )
-                    logger.debug(
-                        f"Feedstock [bold teal]{feedstock_name}[/] found in database. Proceeding to update its feedstock output."
-                    )
-
-                    if feedstock_output:
-                        # It is expected based on our previous filtering of the diff, that the only thing that has changed is the hash
-                        # feedstock_output.path = file.relative_to(path)
-
-                        feedstock_output.hash = hash_file(file)
-
-                        # Update existing feedstock output in the database
-                        session.add(feedstock_output)
-
-                    else:
-                        new_feedstock_output = FeedstockOutputs(
-                            id=uniq_id(),
-                            path=file.relative_to(path).as_posix(),
-                            feedstock_name=feedstock.name,
-                            package_name=package.name,
-                            hash=hash_file(file),
-                        )
-                        session.add(new_feedstock_output)
-                else:
-                    logger.debug(
-                        f"Feedstock [bold teal]{feedstock_name}[/] not found in database. Proceeding to create it and its feedstock output."
-                    )
-                    # Create the feedstock in the database
-                    new_feedstock = Feedstocks(
-                        name=feedstock_name,
-                        # package_name=package.name,
-                    )
-                    session.add(new_feedstock)
-
-                    # Create the feedstock output in the database
-                    new_feedstock_output = FeedstockOutputs(
-                        id=uniq_id(),
-                        path=file.relative_to(path).as_posix(),
-                        feedstock_name=new_feedstock.name,
-                        package_name=package.name,
-                        hash=hash_file(file),
-                    )
-                    session.add(new_feedstock_output)
-
             if idx % 100 == 0:
-                # every 100 files, commit the changes to the database
                 session.commit()
 
         session.commit()

@@ -1,1 +1,1 @@
-from .setup import logger
+from .setup import logger, progressBar
