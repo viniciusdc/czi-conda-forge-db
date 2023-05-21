@@ -30,9 +30,10 @@ runs:
 
     # Cache action can't be modularized as a custom action, so we need to run it explicitly
     - uses: actions/cache@v3
+      id: cache
       with:
         path: ~/conda_pkgs_dir
-        key: ${{ runner.os }}-conda-${{ steps.environment.outputs.environment-name }}-${{ env.DATE }}-${{ inputs.cache-number }}
+        key: ${{ runner.os }}-conda-${{ steps.environment.outputs.environment-name }}-${{ env.DATE }}-${{ inputs.cache-number }}-${{ hashFiles( inputs.env_file ) }}
 
     - name: Setup Mambaforge
       uses: conda-incubator/setup-miniconda@v2
@@ -41,4 +42,12 @@ runs:
         miniforge-version: latest
         use-mamba: true
         activate-environment: ${{ steps.environment.outputs.environment-name }}
-        environment-file: ${{ inputs.env_file }}
+
+    - name: Update environment (hash changed)
+      run: mamba env update --file ${{ inputs.env_file }} -n ${{ steps.environment.outputs.environment-name }}
+      shell: bash -l {0}
+      if: steps.cache.outputs.cache-hit != 'true'
+
+    - name: Show environment dependencies
+      run: conda list -n ${{ steps.environment.outputs.environment-name }}
+      shell: bash -l {0}
