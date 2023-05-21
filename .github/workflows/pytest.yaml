@@ -18,5 +18,10 @@ jobs:
       with:
         env_file: environment.yaml
 
+    - name: Activate environment & check conda info
+      run: |
+        conda activate $(grep name environment.yaml | awk '{ print $2}')
+        conda info
+
     - name: Run PyTest (Unit tests)
       run: python -m pytest tests/unitests
