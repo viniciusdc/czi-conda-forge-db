@@ -1,19 +1,17 @@
 import concurrent.futures
 import glob
-import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import List, Set, Tuple
 
 from sqlalchemy.orm import Session
-from .utils import (
-    hash_file,
+
+from cfdb.log import logger, progressBar
+from cfdb.models.schema import FeedstockOutputs, Feedstocks, Packages, uniq_id
+from cfdb.populate.utils import (
     process_batch,
     retrieve_associated_feedstock_from_output_blob,
 )
-
-from log import logger, progressBar
-from schema import FeedstockOutputs, Feedstocks, Packages, uniq_id
 
 
 def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:

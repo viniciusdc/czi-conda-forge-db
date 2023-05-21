@@ -1,7 +1,6 @@
 import uuid
-from sqlalchemy import LargeBinary, Index
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, ForeignKey, Index, Integer, LargeBinary, String, Table
 from sqlalchemy.ext.declarative import declarative_base
 
 try:

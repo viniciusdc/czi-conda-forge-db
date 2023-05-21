@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from schema import Base
+from models.schema import Base
 from populate import (
     artifacts,
     feedstock_outputs,

@@ -1,7 +1,7 @@
 import hashlib
-from typing import List
-from pathlib import Path
 import json
+from pathlib import Path
+from typing import List
 
 
 def hash_file(filename: str) -> str:
