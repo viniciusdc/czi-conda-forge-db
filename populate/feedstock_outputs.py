@@ -106,7 +106,7 @@ def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:
     return stored_files
 
 
-def _compare_files(feedstock_outputs, stored_files):
+def _compare_files(feedstock_outputs, stored_files, root_dir: Path):
     """
     Compares the feedstock outputs from the database with the stored files, and returns a set of files that were not present in the database or have changed hashes.
 
@@ -117,20 +117,18 @@ def _compare_files(feedstock_outputs, stored_files):
     Returns:
         Set[Path]: A set of file paths that were not present in the database or have changed hashes.
     """
-    db_files = set((Path(row[0]), row[1]) for row in feedstock_outputs)
+    db_files = set((Path(row[0]).as_posix(), row[1]) for row in feedstock_outputs)
     stored_files_set = set()
 
     for stored_file in stored_files:
         with open(stored_file, "r") as f:
             for line in f:
                 file_path, file_hash = line.strip().split(",")
-                stored_files_set.add((Path(file_path), file_hash))
+                stored_files_set.add(
+                    (Path(file_path).relative_to(root_dir).as_posix(), file_hash)
+                )
 
-    changed_files = {
-        file_path
-        for file_path, file_hash in stored_files_set
-        if file_path not in db_files or file_hash != db_files[file_path]
-    }
+    changed_files = stored_files_set - db_files
 
     logger.debug(f"# of changed files: {len(changed_files)}")
 
@@ -175,7 +173,11 @@ def update(session: Session, path: Path):
 
     logger.info("Comparing files...")
     # compare the files in the database with the files in the stored files
-    changed_files = _compare_files(feedstock_outputs, stored_files)
+    changed_files = _compare_files(feedstock_outputs, stored_files, root_dir=path)
+
+    if len(changed_files) == 0:
+        logger.info("No changes detected. Exiting...")
+        return
 
     with progress:
         for idx, file in enumerate(
