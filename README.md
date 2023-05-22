@@ -45,6 +45,10 @@ To see the available options for a command, run `python -m cfdb` followed by the
 
 CFDB uses a SQLite database by default (`cf-database.db`). If you need to use a different database, update the database URL in the `CFDBHandler` class located in `cfdb/handler.py`. Keep in mind that the database must be compatible with SQLAlchemy.
 
+## Entity Relationship Diagram
+
+![Entity Relationship Diagram](static/images/erd_cf.png)
+
 ## Contributing
 
 Contributions are welcome! If you have any suggestions, bug reports, or feature requests, please open an issue or submit a pull request.

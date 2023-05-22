@@ -110,7 +110,7 @@ class RelationsMapFilePaths(Base):
 
 
 if __name__ == "__main__":
-    from eralchemy import render_er
+    from eralchemy2 import render_er
 
     ## Draw from SQLAlchemy base
     render_er(Base, "erd_cf.png")
