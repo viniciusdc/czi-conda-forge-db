@@ -1,3 +1,4 @@
+import click
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from cfdb.models.schema import Base
@@ -9,23 +10,49 @@ from cfdb.log import logger
 from pathlib import Path
 
 
-def update(session):
-    feedstock_outputs.update(
-        session,
-        path= Path('/Users/vinicius/Conda-forge/feedstock-outputs/outputs') # Path("/home/vinicius/Conda-Forge") / "feedstock-outputs" / "outputs",
-    )
-    session.commit()
+class CFDBHandler:
+    def __init__(self, db_url):
+        self.db_url = db_url
+        self.engine = create_engine(db_url)
+        Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine)
 
-    artifacts.update(session)
-    session.commit()
+    def update_feedstock_outputs(self, path):
+        session = self.Session()
+        feedstock_outputs.update(session, path=Path(path))
+        session.commit()
+
+    def update_artifacts(self):
+        session = self.Session()
+        artifacts.update(session)
+        session.commit()
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.option(
+    "--path",
+    type=click.Path(exists=True),
+    required=True,
+    help="Path to feedstock outputs",
+)
+def update_feedstock_outputs(path):
+    db_handler = CFDBHandler("sqlite:///cf-database.db")
+    db_handler.update_feedstock_outputs(path)
+
+
+@cli.command()
+def update_artifacts():
+    db_handler = CFDBHandler("sqlite:///cf-database.db")
+    db_handler.update_artifacts()
 
 
 def run():
-    engine = create_engine("sqlite:///cf-database.db")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    update(session)
+    cli()
 
 
 if __name__ == "__main__":
