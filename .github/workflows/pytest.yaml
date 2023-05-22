@@ -1,0 +1,27 @@
+name: Run PyTest
+
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+          shell: bash -el {0}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Build environment
+      uses: ./.github/actions/build-conda-env
+      with:
+        env_file: environment.yaml
+
+    - name: Activate environment & check conda info
+      run: |
+        conda activate $(grep name environment.yaml | awk '{ print $2}')
+        conda info
+
+    - name: Run PyTest (Unit tests)
+      run: python -m pytest tests/unitests

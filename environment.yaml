@@ -4,7 +4,10 @@ channels:
 dependencies:
   - python=3.9
   - pip
-  - sqlalchemy
+  - pytest
   - pygraphviz
+  - sqlalchemy
+  - click
+  - rich
   - pip:
-      - eralchemy
+      - eralchemy2
