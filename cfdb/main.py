@@ -75,7 +75,12 @@ def update_feedstock_outputs(
     )
 ):
     """
-    Update the feedstock outputs in the database.
+    Update the feedstock outputs in the database based on the local path to the feedstock outputs cloned from Conda Forge. Path to the feedstock outputs directory. The path should point to the 'outputs' folder inside the 'feedstock-outputs' root directory.
+
+
+    Example:
+        To update the feedstock outputs, use the following command:
+        $ cfdb update_feedstock_outputs --path /path/to/feedstock-outputs/outputs
     """
     db_handler = CFDBHandler("sqlite:///cf-database.db")
     db_handler.update_feedstock_outputs(path)
