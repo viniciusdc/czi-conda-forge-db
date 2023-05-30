@@ -99,7 +99,6 @@ def _compare_files(
 
 def _update_feedstock_outputs(
     session: Session,
-    file_rel_path: Path,
     file_hash: str,
     package_name: str,
     feedstock_name: str,
@@ -153,7 +152,6 @@ def _update_feedstock_outputs(
 
     new_feedstock_output = FeedstockOutputs(
         id=uniq_id(),
-        path=file_rel_path.as_posix(),
         feedstock_name=feedstock.name,
         package_name=package_name,
         hash=file_hash,
@@ -177,7 +175,7 @@ def update(session: Session, path: Path):
 
     logger.info("Querying database for feedstock outputs...")
     feedstock_outputs = session.query(
-        FeedstockOutputs.path, FeedstockOutputs.hash, FeedstockOutputs.id
+        FeedstockOutputs.hash, FeedstockOutputs.id
     ).all()
 
     logger.info(f"Traversing files in {path}...")
@@ -219,7 +217,6 @@ def update(session: Session, path: Path):
             for feedstock_name in associated_feedstocks:
                 session = _update_feedstock_outputs(
                     session=session,
-                    file_rel_path=file,
                     file_hash=file_hash,
                     package_name=package.name,
                     feedstock_name=feedstock_name,
