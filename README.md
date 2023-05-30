@@ -26,14 +26,14 @@ CFDB is a database management tool for Conda Forge, an open-source community-led
 
 CFDB provides a command-line interface (CLI) to interact with the database. Here are the available commands:
 
-- `cfdb update_feedstock_outputs`: Update the feedstock outputs in the database based on the local path to the feedstock outputs cloned from Conda Forge.
+- `python -m cfdb update-feedstock-outputs`: Update the feedstock outputs in the database based on the local path to the feedstock outputs cloned from Conda Forge.
 
-- `cfdb update_artifacts`: Update the artifacts in the database.
+- `python -m cfdb update-artifacts`: Update the artifacts in the database.
 
 To execute a command, run `python -m cfdb` followed by the desired command. For example, to update the feedstock outputs in the database, run:
 
 ```bash
-cfdb update_feedstock_outputs --p /path/to/feedstock-outputs/outputs
+python -m cfdb update-feedstock-outputs -p /path/to/feedstock-outputs/outputs
 ```
 
 ![Example output from executing update_feedstock_outputs](static/images/cli_update_feedstock_outputs_execution.png)

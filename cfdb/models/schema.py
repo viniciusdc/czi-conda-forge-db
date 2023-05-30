@@ -70,7 +70,6 @@ class FeedstockOutputs(Base):
     __tablename__ = "feedstock_outputs"
 
     id = Column(UUID, primary_key=True)
-    path = Column(String)
     feedstock_name = Column(Integer, ForeignKey("feedstocks.name"))
     package_name = Column(Integer, ForeignKey("packages.name"))
     hash = Column(String)
