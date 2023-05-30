@@ -9,5 +9,6 @@ dependencies:
   - sqlalchemy
   - click
   - rich
+  - typer
   - pip:
       - eralchemy2
