@@ -1,5 +1,3 @@
-import concurrent.futures
-import glob
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import List, Set, Tuple
@@ -9,59 +7,9 @@ from sqlalchemy.orm import Session
 from cfdb.log import logger, progressBar
 from cfdb.models.schema import FeedstockOutputs, Feedstocks, Packages, uniq_id
 from cfdb.populate.utils import (
-    process_batch,
     retrieve_associated_feedstock_from_output_blob,
+    transverse_files,
 )
-
-
-def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:
-    """
-    Traverses a directory of JSON files, generating a list of dictionaries
-    with file paths and hashes. These dictionaries are written to an output directory.
-
-    The hashes allow comparison between the directory and a database for necessary updates.
-    Files are processed in batches of 1000 to optimize memory usage.
-
-    Args:
-        path (Path): The path to the directory containing the JSON files.
-        output_dir (Path, optional): The output directory to store the list of dictionaries.
-            If not provided, the current directory will be used. Defaults to None.
-
-    Returns:
-        List[Path]: A list of paths to the stored files.
-    """
-    if not path.is_dir():
-        raise NotADirectoryError(f"{path} is not a directory.")
-
-    files = list(glob.iglob(f"{path}/**/*.json", recursive=True))
-    logger.debug(f"# of JSON blob files: {len(files)}")
-
-    num_of_files = len(files)
-    num_of_batches = num_of_files // 1000
-
-    if num_of_files % 1000 != 0:
-        num_of_batches += 1
-
-    if output_dir is None:
-        output_dir = Path(".")
-
-    stored_files = []
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for i in range(num_of_batches):
-            tmp_file = output_dir / f"batch_{i}.json"
-            logger.debug(f"Creating temporary file {tmp_file}...")
-            batch_files = files[i * 1000 : (i + 1) * 1000]
-            batch_files.reverse()
-
-            executor.submit(process_batch, batch_files, tmp_file)
-
-            stored_files.append(tmp_file)
-
-    del files
-    logger.debug(f"# of stored files: {len(stored_files)}")
-
-    return stored_files
 
 
 def _compare_files(
@@ -99,6 +47,7 @@ def _compare_files(
 
 def _update_feedstock_outputs(
     session: Session,
+    file_rel_path: Path,
     file_hash: str,
     package_name: str,
     feedstock_name: str,
@@ -152,6 +101,7 @@ def _update_feedstock_outputs(
 
     new_feedstock_output = FeedstockOutputs(
         id=uniq_id(),
+        path=file_rel_path.as_posix(),
         feedstock_name=feedstock.name,
         package_name=package_name,
         hash=file_hash,
@@ -175,7 +125,7 @@ def update(session: Session, path: Path):
 
     logger.info("Querying database for feedstock outputs...")
     feedstock_outputs = session.query(
-        FeedstockOutputs.hash, FeedstockOutputs.id
+        FeedstockOutputs.path, FeedstockOutputs.hash, FeedstockOutputs.id
     ).all()
 
     logger.info(f"Traversing files in {path}...")
@@ -217,6 +167,7 @@ def update(session: Session, path: Path):
             for feedstock_name in associated_feedstocks:
                 session = _update_feedstock_outputs(
                     session=session,
+                    file_rel_path=file,
                     file_hash=file_hash,
                     package_name=package.name,
                     feedstock_name=feedstock_name,
