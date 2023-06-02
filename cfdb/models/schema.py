@@ -84,6 +84,27 @@ Index(
 )
 
 
+class ImportToPackageMaps(Base):
+    __tablename__ = "import_to_package_mapping"
+
+    id = Column(Integer, primary_key=True)
+    import_name = Column(String)
+    parent_package_name = Column(UUID, ForeignKey("packages.name"))
+    partition = Column(String)
+    hash = Column(String)
+
+    def __repr__(self):
+        return f"<ImportToPackageMaps(import_name={self.import_name}, parent_package={self.parent_package})>"
+
+
+Index(
+    "import_to_package_mapping_index",
+    ImportToPackageMaps.import_name,
+    ImportToPackageMaps.parent_package_name,
+    unique=True,
+)
+
+
 class Artifacts(Base):
     __tablename__ = "artifacts"
     name = Column(String, primary_key=True, index=True)
