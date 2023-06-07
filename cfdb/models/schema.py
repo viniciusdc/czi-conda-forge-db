@@ -87,9 +87,9 @@ Index(
 class ImportToPackageMaps(Base):
     __tablename__ = "import_to_package_mapping"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID, primary_key=True)
     import_name = Column(String)
-    parent_package_name = Column(UUID, ForeignKey("packages.name"))
+    parent_package_name = Column(String, ForeignKey("packages.name"))
     partition = Column(String)
     hash = Column(String)
 

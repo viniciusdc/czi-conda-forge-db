@@ -61,6 +61,30 @@ def retrieve_associated_feedstock_from_output_blob(file: Path):
     return associated_feedstocks
 
 
+def retrieve_import_maps_from_output_blob(file: Path):
+    """
+
+    Args:
+        file (Path): The path to the output blob file.
+
+    Returns:
+        List[str]: A list of associated feedstock names.
+    """
+    with open(file, "r") as f:
+        payload = json.loads(f.read())
+
+    packages_to_imports = {}
+    for import_name, _set in payload.items():
+        elements = _set["elements"]  # should return a list
+        for element in elements:
+            if element not in packages_to_imports:
+                packages_to_imports[element] = [import_name]
+            else:
+                packages_to_imports[element].append(import_name)
+
+    return packages_to_imports
+
+
 def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:
     """
     Traverses a directory of JSON files, generating a list of dictionaries

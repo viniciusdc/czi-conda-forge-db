@@ -5,8 +5,19 @@ from typing import List, Set, Tuple
 from sqlalchemy.orm import Session
 
 from cfdb.log import logger, progressBar
-from cfdb.models.schema import ImportToPackageMaps, Packages
-from cfdb.populate.utils import transverse_files
+from cfdb.models.schema import ImportToPackageMaps, Packages, uniq_id
+from cfdb.populate.utils import transverse_files, retrieve_import_maps_from_output_blob
+
+
+def _decompose_filename(filename_handle: str):
+    try:
+        package_name, partition = filename_handle.split(".")
+    except ValueError as e:
+        # We assume that typeerror will only happen when filename
+        # is likely name.. (with the extra dot)
+        package_name = filename_handle
+        partition = ""
+    return package_name, partition
 
 
 def _compare_files(
@@ -57,3 +68,45 @@ def update(session: Session, path: Path):
 
     logger.info("Comparing files...")
     changed_files = _compare_files(_database_mappings, stored_files, root_dir=path)
+
+    with progressBar:
+        for idx, (file, file_hash) in enumerate(
+            progressBar.track(changed_files, description="Updating import maps")
+        ):
+            _, partition = _decompose_filename(file.stem)
+
+            import_map_data_blob = retrieve_import_maps_from_output_blob(
+                file=path / file  # absolute path
+            )
+            # now we will have a dictionary containing the package names and their respective imports
+
+            for package_name, imports in import_map_data_blob.items():
+                package = (
+                    session.query(Packages)
+                    .filter(Packages.name == package_name)
+                    .first()
+                )
+
+                if not package:
+                    logger.debug(
+                        f"Package '{package_name}' not found in database. Proceeding to create it and its feedstock outputs."
+                    )
+                    package = Packages(
+                        name=package_name,
+                    )
+                    session.add(package)
+
+                for _import in imports:
+                    _mapping = ImportToPackageMaps(
+                        id=uniq_id(),  # to update
+                        import_name=_import,
+                        parent_package_name=package.name,
+                        partition=partition,
+                        hash=file_hash,
+                    )
+                    session.add(_mapping)
+
+            if idx % 100 == 0:
+                session.commit()
+
+        session.commit()
