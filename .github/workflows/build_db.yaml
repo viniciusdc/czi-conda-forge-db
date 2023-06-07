@@ -1,6 +1,6 @@
 name: Run PyTest
 
-on: workflow_dispatch
+on: [pull_request, workflow_dispatch]
 
 jobs:
   build-and-push:
