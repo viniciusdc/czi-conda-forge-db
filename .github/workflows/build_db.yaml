@@ -55,7 +55,8 @@ jobs:
     - name: Populate table
       if: always()
       run: |
-        cd cfdb
+        cd ..
+        echo $(pwd)
         echo "Update feedstock outputs"
         python -m cfdb update-feedstock-outputs -p $FEEDSTOCK_OUTPUTS
         echo "Update import Packages to maps"
