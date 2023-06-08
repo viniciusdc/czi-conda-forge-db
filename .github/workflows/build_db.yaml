@@ -1,4 +1,4 @@
-name: Run PyTest
+name: Create & Update DB
 
 on: [pull_request, workflow_dispatch]
 
@@ -30,17 +30,18 @@ jobs:
 
     - name: Retrieve previous DB table from artifacts
       uses: actions/download-artifact@v2
-      if: always()
       with:
         name: my-db-table
         path: ./cf-database.db
 
     - name: Clone Feedstock Outputs
+      if: always()
       run: |
         git clone https://github.com/conda-forge/feedstock-outputs.git
         echo "FEEDSTOCK_OUTPUTS=$(pwd)/feedstock-outputs" >> $GITHUB_ENV
 
     - name: Clone Artifacts (import_to_package_maps -- sparse)
+      if: always()
       run: |
         mkdir libcfgraph && cd libcfgraph
         git init
@@ -52,6 +53,7 @@ jobs:
 
 
     - name: Populate table
+      if: always()
       run: |
         cd cfdb
         echo "Update feedstock outputs"
@@ -60,6 +62,7 @@ jobs:
         python -m cfdb update-import-to-package-maps --path $IMPORT_TO_PACKAGES
 
     - name: 'Upload Artifact'
+      if: always()
       uses: actions/upload-artifact@v2
       with:
         name: my-db-table
