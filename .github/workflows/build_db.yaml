@@ -32,6 +32,7 @@ jobs:
         path: ./cf-database.db
 
     - name: Create runtest directory
+      if: always()
       run: |
         mkdir database
         cd database
