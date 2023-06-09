@@ -22,6 +22,9 @@ jobs:
       run: |
         conda activate $(grep name environment.yaml | awk '{ print $2}')
         conda info
+        echo "Install cfdb"
+        pip install -e .
+
 
     - name: Create runtest directory
       run: |
