@@ -58,9 +58,9 @@ jobs:
         cd ..
         echo $(pwd)
         echo "Update feedstock outputs"
-        python -m cfdb update-feedstock-outputs -p $FEEDSTOCK_OUTPUTS
+        cfdb update-feedstock-outputs -p $FEEDSTOCK_OUTPUTS
         echo "Update import Packages to maps"
-        python -m cfdb update-import-to-package-maps --path $IMPORT_TO_PACKAGES
+        cfdb update-import-to-package-maps --path $IMPORT_TO_PACKAGES
 
     - name: 'Upload Artifact'
       if: always()
