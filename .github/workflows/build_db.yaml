@@ -29,7 +29,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: my-db-table
-        path: ./cf-database.db
+        path: cf-database.db
 
     - name: Create runtest directory
       if: always()
@@ -72,4 +72,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: my-db-table
-        path: ./cf-database.db
+        path: cf-database.db
