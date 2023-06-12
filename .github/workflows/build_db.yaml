@@ -65,6 +65,7 @@ jobs:
         cfdb update-feedstock-outputs -p $FEEDSTOCK_OUTPUTS
         echo "Update import Packages to maps"
         cfdb update-import-to-package-maps --path $IMPORT_TO_PACKAGES
+        ls -lat
 
     - name: 'Upload Artifact'
       if: always()
