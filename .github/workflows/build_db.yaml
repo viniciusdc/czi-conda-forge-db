@@ -52,9 +52,9 @@ jobs:
         echo "import_to_pkg_maps" >> .git/info/sparse-checkout
         git remote add origin https://github.com/regro/libcfgraph.git
         git pull --depth=1 origin master
+        find ./import_to_pkg_maps -type f -name "*.json" | grep -c .
         echo "IMPORT_TO_PACKAGES=$(pwd)/import_to_pkg_maps" >> $GITHUB_ENV
-        popd
-
+        cd ..
 
     - name: Populate table
       if: always()
