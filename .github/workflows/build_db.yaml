@@ -28,8 +28,8 @@ jobs:
     - name: Retrieve previous DB table from artifacts
       uses: actions/download-artifact@v2
       with:
-        name: my-db-table
-        path: cf-database.db
+        name: cfdb
+        path: /home/runner/work/czi-conda-forge-db/cf-database.db
 
     - name: Create runtest directory
       if: always()
@@ -71,5 +71,5 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v2
       with:
-        name: my-db-table
-        path: cf-database.db
+        name: cfdb
+        path: /home/runner/work/czi-conda-forge-db/cf-database.db
