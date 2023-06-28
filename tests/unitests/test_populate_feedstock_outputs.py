@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from cfdb.populate.feedstock_outputs import transverse_files, _compare_files
+from cfdb.populate.feedstock_outputs import traverse_files, _compare_files
 from cfdb.populate.utils import hash_file
 
 
@@ -25,10 +25,10 @@ def json_dir(tmpdir):
     root_dir.remove()
 
 
-def test_transverse_files(json_dir):
-    # Call the transverse_files function
+def test_traverse_files(json_dir):
+    # Call the traverse_files function
     output_dir = json_dir  # Use the same directory as the input for simplicity
-    stored_files = transverse_files(json_dir, output_dir)
+    stored_files = traverse_files(json_dir, output_dir)
 
     # Assert that the returned value is a list of paths
     assert isinstance(stored_files, list)

@@ -4,7 +4,7 @@ from click import Context
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from cfdb.models.schema import Base
-from cfdb.populate import artifacts, feedstock_outputs
+from cfdb.populate import artifacts, feedstock_outputs, import_to_package_maps
 from cfdb.log import logger
 from pathlib import Path
 
@@ -51,6 +51,17 @@ class CFDBHandler:
         artifacts.update(session)
         session.commit()
 
+    def update_import_to_package_maps(self, path):
+        """
+        Update the import to package maps in the database.
+
+        Args:
+            path (str): Path to the import to package maps directory.
+        """
+        session = self.Session()
+        import_to_package_maps.update(session, path=Path(path))
+        session.commit()
+
 
 class OrderCommands(TyperGroup):
     def list_commands(self, ctx: Context):
@@ -84,6 +95,26 @@ def update_feedstock_outputs(
     """
     db_handler = CFDBHandler("sqlite:///cf-database.db")
     db_handler.update_feedstock_outputs(path)
+
+
+@app.command()
+def update_import_to_package_maps(
+    path: str = typer.Option(
+        ..., "--path", "-p", help="Path to the import to package maps directory."
+    )
+):
+    """
+    Update the import to package maps in the database based on the local path to the
+    import to package maps cloned from conda-forge. Path to the import to package
+    maps directory. The path should point to the 'import_to_package_maps' folder
+    inside the 'libcfgraph' root directory or any viable alternative.
+
+    Example:
+        To update the import to package maps, use the following command:
+        $ cfdb update_import_to_package_maps --path /path/to/libcfgraph/import_to_package_maps
+    """
+    db_handler = CFDBHandler("sqlite:///cf-database.db")
+    db_handler.update_import_to_package_maps(path)
 
 
 @app.command()

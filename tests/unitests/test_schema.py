@@ -23,6 +23,7 @@ def sample_package() -> Packages:
 def sample_feedstock_output(sample_feedstock, sample_package) -> FeedstockOutputs:
     return FeedstockOutputs(
         id="output_1",
+        path="/path/to/output_1",
         feedstock_name=sample_feedstock.name,
         package_name=sample_package.name,
         hash="123456",
@@ -56,6 +57,7 @@ def test_packages(sample_package):
 
 def test_feedstock_outputs(sample_feedstock_output, sample_feedstock, sample_package):
     assert sample_feedstock_output.id == "output_1"
+    assert sample_feedstock_output.path == "/path/to/output_1"
     assert sample_feedstock_output.feedstock_name == sample_feedstock.name
     assert sample_feedstock_output.package_name == sample_package.name
     assert sample_feedstock_output.hash == "123456"

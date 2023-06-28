@@ -70,6 +70,7 @@ class FeedstockOutputs(Base):
     __tablename__ = "feedstock_outputs"
 
     id = Column(UUID, primary_key=True)
+    path = Column(String)
     feedstock_name = Column(Integer, ForeignKey("feedstocks.name"))
     package_name = Column(Integer, ForeignKey("packages.name"))
     hash = Column(String)
@@ -79,6 +80,27 @@ Index(
     "feedstock_output_index",
     FeedstockOutputs.feedstock_name,
     FeedstockOutputs.package_name,
+    unique=True,
+)
+
+
+class ImportToPackageMaps(Base):
+    __tablename__ = "import_to_package_mapping"
+
+    id = Column(UUID, primary_key=True)
+    import_name = Column(String)
+    parent_package_name = Column(String, ForeignKey("packages.name"))
+    partition = Column(String)
+    hash = Column(String)
+
+    def __repr__(self):
+        return f"<ImportToPackageMaps(import_name={self.import_name}, parent_package={self.parent_package})>"
+
+
+Index(
+    "import_to_package_mapping_index",
+    ImportToPackageMaps.import_name,
+    ImportToPackageMaps.parent_package_name,
     unique=True,
 )
 

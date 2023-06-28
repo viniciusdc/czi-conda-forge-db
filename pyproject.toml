@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfdb"
+version = "1.0.0"
+description = "A Python package for Conda-Forge DB"
+requires-python = ">=3.8"
+authors = [
+    {name = "Vinicius D. Cerutti", email = "vcerutti@quansight.com"},
+]
+
+classifiers = [
+  "Development Status :: 2 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.scripts]
+cfdb = "cfdb.__main__:main"
+
+[tool.setuptools]
+py-modules = ['cfdb']

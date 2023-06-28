@@ -1,0 +1,79 @@
+name: Create & Update DB
+
+on: [pull_request, workflow_dispatch]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+          shell: bash -el {0}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Clone Feedstock Outputs
+      if: always()
+      uses: actions/checkout@v3
+      with:
+        repository: conda-forge/feedstock-outputs
+        path: feedstock-outputs
+
+    - name: Clone Artifacts (import_to_package_maps -- sparse)
+      if: always()
+      uses: actions/checkout@v3
+      with:
+        repository: regro/libcfgraph
+        path: libcfgraph
+        sparse-checkout: import_to_pkg_maps
+        fetch-depth: 1
+
+    - name: Verify cloned repos
+      run: |
+        ls -lat
+        ls -lat ${{ github.workspace }}/feedstock-outputs
+        ls -lat ${{ github.workspace }}/libcfgraph
+
+
+    - name: Build environment
+      uses: ./.github/actions/build-conda-env
+      with:
+        env_file: environment.yaml
+
+    - name: Activate environment & check conda info
+      run: |
+        conda activate $(grep name environment.yaml | awk '{ print $2}')
+        conda info
+        echo "Install cfdb"
+        pip install -e .
+
+    - name: Retrieve previous DB table from artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: cfdb
+        path: ${{ github.workspace }}/cf-database.db
+
+    - name: Create runtest directory
+      if: always()
+      run: |
+        mkdir database
+        cd database
+
+    - name: Populate table
+      if: always()
+      run: |
+        cd ..
+        echo $(pwd)
+        echo "Update feedstock outputs"
+        cfdb update-feedstock-outputs -p ${{ github.workspace }}/feedstock-outputs
+        echo "Update import Packages to maps"
+        cfdb update-import-to-package-maps --path ${{ github.workspace }}/libcfgraph/import_to_pkg_maps
+        ls -lat
+
+    - name: 'Upload Artifact'
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: cfdb
+        path: ${{ github.workspace }}/cf-database.db
