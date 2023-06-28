@@ -8,7 +8,7 @@ from cfdb.log import logger, progressBar
 from cfdb.models.schema import FeedstockOutputs, Feedstocks, Packages, uniq_id
 from cfdb.populate.utils import (
     retrieve_associated_feedstock_from_output_blob,
-    transverse_files,
+    traverse_files,
 )
 
 
@@ -129,7 +129,7 @@ def update(session: Session, path: Path):
     ).all()
 
     logger.info(f"Traversing files in {path}...")
-    stored_files = transverse_files(path, tmp_dir)
+    stored_files = traverse_files(path, tmp_dir)
 
     logger.info("Comparing files...")
     changed_files = _compare_files(feedstock_outputs, stored_files, root_dir=path)

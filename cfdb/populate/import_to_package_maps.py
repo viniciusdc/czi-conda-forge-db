@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from cfdb.log import logger, progressBar
 from cfdb.models.schema import ImportToPackageMaps, Packages, uniq_id
-from cfdb.populate.utils import transverse_files, retrieve_import_maps_from_output_blob
+from cfdb.populate.utils import traverse_files, retrieve_import_maps_from_output_blob
 
 
 def _decompose_filename(filename_handle: str):
@@ -65,7 +65,7 @@ def update(session: Session, path: Path):
     ).all()
 
     logger.info(f"Traversing files in {path}...")
-    stored_files = transverse_files(path, tmp_dir)
+    stored_files = traverse_files(path, tmp_dir)
 
     logger.info("Comparing files...")
     changed_files = _compare_files(_database_mappings, stored_files, root_dir=path)

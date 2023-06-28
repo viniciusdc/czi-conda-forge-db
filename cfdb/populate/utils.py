@@ -85,7 +85,7 @@ def retrieve_import_maps_from_output_blob(file: Path):
     return packages_to_imports
 
 
-def transverse_files(path: Path, output_dir: Path = None) -> List[Path]:
+def traverse_files(path: Path, output_dir: Path = None) -> List[Path]:
     """
     Traverses a directory of JSON files, generating a list of dictionaries
     with file paths and hashes. These dictionaries are written to an output directory.
