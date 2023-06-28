@@ -99,7 +99,7 @@ def update(session: Session, path: Path):
 
                 for _import in imports:
                     _mapping = ImportToPackageMaps(
-                        id=uniq_id(),  # to update
+                        id=uniq_id(),
                         import_name=_import,
                         parent_package_name=package.name,
                         partition=partition,
