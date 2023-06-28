@@ -10,25 +10,31 @@ jobs:
           shell: bash -el {0}
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
     - name: Clone Feedstock Outputs
       if: always()
       uses: actions/checkout@v3
       with:
         repository: conda-forge/feedstock-outputs
-        path: ${{ github.workspace }}/feedstock-outputs
+        path: feedstock-outputs
 
     - name: Clone Artifacts (import_to_package_maps -- sparse)
       if: always()
       uses: actions/checkout@v3
       with:
         repository: regro/libcfgraph
-        path: ${{ github.workspace }}/libcfgraph
+        path: libcfgraph
         sparse-checkout: import_to_pkg_maps
         fetch-depth: 1
 
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Verify cloned repos
+      run: |
+        ls -lat
+        ls -lat ${{ github.workspace }}/feedstock-outputs
+        ls -lat ${{ github.workspace }}/libcfgraph
+
 
     - name: Build environment
       uses: ./.github/actions/build-conda-env
@@ -46,7 +52,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: cfdb
-        path: ${{ github.workspace }}/../cf-database.db
+        path: ${{ github.workspace }}/cf-database.db
 
     - name: Create runtest directory
       if: always()
@@ -70,4 +76,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: cfdb
-        path: ${{ github.workspace }}/../cf-database.db
+        path: ${{ github.workspace }}/cf-database.db
