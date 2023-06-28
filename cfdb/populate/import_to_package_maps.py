@@ -49,7 +49,8 @@ def update(session: Session, path: Path):
 
     Args:
         session (Session): The SQLAlchemy session object.
-        path (Path): The path to import to package maps directory containing the JSON blobs. (relative to the root directory of "libcfgraph" or viable alternative).
+        path (Path): The path to import to package maps directory containing the JSON blobs
+        (relative to the root directory of "libcfgraph" or viable alternative).
     """
     logger.info("Updating feedstocks...")
     logger.debug("Creating temporary directory...")
