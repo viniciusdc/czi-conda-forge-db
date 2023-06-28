@@ -6,21 +6,22 @@ build-backend = "setuptools.build_meta"
 name = "cfdb"
 version = "1.0.0"
 description = "A Python package for Conda-Forge DB"
-author = "Vinicius D. Cerutti"
-author_email = "vcerutti@quansight.com"
+authors = [
+    {"name": "Vinicius D. Cerutti", "email": "vcerutti@quansight.com"},
+]
+dependencies = [
+    "python = >=3.8"
+]
+classifiers = [
+  "Development Status :: 2 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3 :: Only",
+]
 
 [project.scripts]
 cfdb = "cfdb.__main__:main"
-
-[project.dependencies]
-python = ">=3.6"
-
-[project.dev-dependencies]
-setuptools = ">=42"
-wheel = "*"
-
-[project.classifiers]
-Development-Status = "5 - Production/Stable"
-Intended-Audience = "Developers"
-License = "OSI Approved :: MIT License"
-Programming-Language = ["Python :: 3.6", "Python :: 3.7", "Python :: 3.8", "Python :: 3.9"]
