@@ -109,7 +109,6 @@ def update_import_to_package_maps(
     maps directory. The path should point to the 'import_to_package_maps' folder
     inside the 'libcfgraph' root directory or any viable alternative.
 
-
     Example:
         To update the import to package maps, use the following command:
         $ cfdb update_import_to_package_maps --path /path/to/libcfgraph/import_to_package_maps
