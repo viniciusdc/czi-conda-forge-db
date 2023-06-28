@@ -104,7 +104,10 @@ def update_import_to_package_maps(
     )
 ):
     """
-    Update the import to package maps in the database based on the local path to the import to package maps cloned from Conda Forge. Path to the import to package maps directory. The path should point to the 'import_to_package_maps' folder inside the 'libcfgraph' root directory or any viable alternative.
+    Update the import to package maps in the database based on the local path to the
+    import to package maps cloned from conda-forge. Path to the import to package
+    maps directory. The path should point to the 'import_to_package_maps' folder
+    inside the 'libcfgraph' root directory or any viable alternative.
 
 
     Example:
