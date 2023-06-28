@@ -6,7 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "cfdb"
 version = "1.0.0"
 description = "A Python package for Conda-Forge DB"
-authors = ["Vinicius D. Cerutti <vcerutti@quansight.com>"]
+author = "Vinicius D. Cerutti"
+author_email = "vcerutti@quansight.com"
 
 [project.scripts]
 cfdb = "cfdb.__main__:main"
