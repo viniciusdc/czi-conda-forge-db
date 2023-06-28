@@ -10,8 +10,25 @@ jobs:
           shell: bash -el {0}
 
     steps:
+
+    - name: Clone Feedstock Outputs
+      if: always()
+      uses: actions/checkout@v3
+      with:
+        repository: conda-forge/feedstock-outputs
+        path: ${{ github.workspace }}/feedstock-outputs
+
+    - name: Clone Artifacts (import_to_package_maps -- sparse)
+      if: always()
+      uses: actions/checkout@v3
+      with:
+        repository: regro/libcfgraph
+        path: ${{ github.workspace }}/libcfgraph
+        sparse-checkout: import_to_pkg_maps
+        fetch-depth: 1
+
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Build environment
       uses: ./.github/actions/build-conda-env
@@ -37,34 +54,15 @@ jobs:
         mkdir database
         cd database
 
-    - name: Clone Feedstock Outputs
-      if: always()
-      run: |
-        git clone https://github.com/conda-forge/feedstock-outputs.git
-        echo "FEEDSTOCK_OUTPUTS=$(pwd)/feedstock-outputs" >> $GITHUB_ENV
-
-    - name: Clone Artifacts (import_to_package_maps -- sparse)
-      if: always()
-      run: |
-        mkdir libcfgraph && cd libcfgraph
-        git init
-        git config core.sparsecheckout true
-        echo "import_to_pkg_maps" >> .git/info/sparse-checkout
-        git remote add origin https://github.com/regro/libcfgraph.git
-        git pull --depth=1 origin master
-        find ./import_to_pkg_maps -type f -name "*.json" | grep -c .
-        echo "IMPORT_TO_PACKAGES=$(pwd)/import_to_pkg_maps" >> $GITHUB_ENV
-        cd ..
-
     - name: Populate table
       if: always()
       run: |
         cd ..
         echo $(pwd)
         echo "Update feedstock outputs"
-        cfdb update-feedstock-outputs -p $FEEDSTOCK_OUTPUTS
+        cfdb update-feedstock-outputs -p ${{ github.workspace }}/feedstock-outputs
         echo "Update import Packages to maps"
-        cfdb update-import-to-package-maps --path $IMPORT_TO_PACKAGES
+        cfdb update-import-to-package-maps --path ${{ github.workspace }}/libcfgraph/import_to_pkg_maps
         ls -lat
 
     - name: 'Upload Artifact'
@@ -72,4 +70,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: cfdb
-        path: /home/runner/work/czi-conda-forge-db/cf-database.db
+        path: ${{ github.workspace }}/../cf-database.db
