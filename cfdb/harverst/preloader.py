@@ -18,6 +18,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 import requests
 import tqdm
 
+from .utils import recursive_ls
 
 channel_list = [
     "https://conda.anaconda.org/conda-forge/linux-64",
