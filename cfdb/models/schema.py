@@ -110,8 +110,9 @@ class Artifacts(Base):
     name = Column(String, primary_key=True, index=True)
     package_name = Column(String, ForeignKey("packages.name"))
     platform = Column(String, primary_key=True)
-    version = Column(String)
-    relational_id = Column(Integer, ForeignKey("relations_map_file_paths.id"))
+    # relational_id = Column(Integer, ForeignKey("relations_map_file_paths.id"))
+    hash = Column(String)
+    path = Column(String)
 
     def __repr__(self):
         return f"<Artifact(name={self.name}, platform={self.platform}, version={self.version})>"

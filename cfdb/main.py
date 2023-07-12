@@ -43,12 +43,12 @@ class CFDBHandler:
         feedstock_outputs.update(session, path=Path(path))
         session.commit()
 
-    def update_artifacts(self):
+    def update_artifacts(self, path):
         """
         Update the artifacts in the database.
         """
         session = self.Session()
-        artifacts.update(session)
+        artifacts.update(session, path=Path(path))
         session.commit()
 
     def update_import_to_package_maps(self, path):
@@ -118,12 +118,16 @@ def update_import_to_package_maps(
 
 
 @app.command()
-def update_artifacts():
+def update_artifacts(
+    path: str = typer.Option(
+        ..., "--path", "-p", help="Path to the artifacts directory."
+    )
+):
     """
     Update the artifacts in the database.
     """
     db_handler = CFDBHandler("sqlite:///cf-database.db")
-    db_handler.update_artifacts()
+    db_handler.update_artifacts(path)
 
 
 if __name__ == "__main__":
